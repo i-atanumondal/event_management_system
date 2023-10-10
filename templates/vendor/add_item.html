@@ -1,0 +1,28 @@
+<!-- vendor/add_item.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Item</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Add New Item</h1>
+        <form method="POST" action="/vendor/add-item">
+            <label for="name">Name:</label>
+            <input type="text" name="name" required><br><br>
+
+            <label for="description">Description:</label>
+            <textarea name="description" required></textarea><br><br>
+
+            <label for="price">Price:</label>
+            <input type="number" name="price" required><br><br>
+
+            <input type="submit" value="Add Item" class="btn">
+        </form>
+        <a href="/vendor/items" class="btn">Back to Your Items</a>
+    </div>
+</body>
+</html>

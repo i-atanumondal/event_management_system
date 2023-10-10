@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ vendor_name }}</h1>
+        <div class="dashboard-buttons">
+            <a href="/vendor/items" class="btn btn-primary">Your Items</a>
+            <a href="/vendor/add-item" class="btn btn-primary">Add New Items</a>
+            <a href="/vendor/transaction" class="btn btn-primary">Transaction</a>
+            <a href="/vendor/logout" class="btn btn-danger">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendors in Category: {{ category }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Vendors in Category: {{ category }}</h1>
+        <ul>
+            {% for vendor in vendors %}
+            <li>
+                <strong>{{ vendor.name }}</strong><br>
+                Contact: {{ vendor.contact }}<br>
+                <a href="/user/shop-items/{{ vendor.id }}" class="btn btn-primary">Shop Items</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

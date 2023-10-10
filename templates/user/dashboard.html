@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ user_name }}</h1>
+        
+        <div class="dashboard-buttons">
+            <a href="/user/vendors" class="btn btn-primary">Vendor</a>
+            <a href="/user/cart" class="btn btn-primary">Cart</a>
+            <a href="/user/guest-list" class="btn btn-primary">Guest List</a>
+            <a href="/user/order-status" class="btn btn-primary">Order Status</a>
+            <a href="/user/logout" class="btn btn-danger">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

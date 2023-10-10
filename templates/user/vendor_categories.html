@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Categories</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Choose a Vendor Category</h1>
+        <ul>
+            {% for category in vendor_categories %}
+            <li><a href="/user/vendors/{{ category }}">{{ category }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
