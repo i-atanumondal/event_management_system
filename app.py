@@ -15,6 +15,9 @@ db_config = {
 db = mysql.connector.connect(**db_config)
 
 cursor = db.cursor()
+@app.route('/')
+def landing_page():
+    return render_template('landing.html')
 
 @app.route('/admin/signup', methods=['GET', 'POST'])
 def admin_signup():
@@ -162,21 +165,21 @@ def get_logged_in_vendor_id():
 @app.route('/vendor/dashboard')
 def vendor_dashboard():
     vendor_id = get_logged_in_vendor_id()
-
+    
     cursor.execute("SELECT name FROM vendors WHERE id = %s", (vendor_id,))
-    vendor_name = cursor.fetchone()[0]  
+    vendor_name = cursor.fetchone()[0]
 
     cursor.execute("SELECT * FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
     items = cursor.fetchall()
 
     return render_template('vendor/dashboard.html', vendor_name=vendor_name, items=items)
 
-
 @app.route('/vendor/items')
 def vendor_items():
     vendor_id = session.get('vendor_id')
     if vendor_id is None:
         return redirect(url_for('vendor_login'))
+
     cursor.execute("SELECT id, name, description, price FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
     items = cursor.fetchall()
 
@@ -187,11 +190,12 @@ def vendor_add_item():
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        price = float(request.form['price']) 
+        price = float(request.form['price'])
         vendor_id = session.get('vendor_id')
+        
         if vendor_id is None:
             return redirect(url_for('vendor_login'))
-
+        
         cursor.execute(
             "INSERT INTO vendor_items (vendor_id, name, description, price) VALUES (%s, %s, %s, %s)",
             (vendor_id, name, description, price)
@@ -206,7 +210,7 @@ def vendor_delete_item(item_id):
     if 'vendor_id' not in session:
         flash('Please log in to perform this action.', 'danger')
         return redirect(url_for('vendor_login'))
-
+    
     vendor_id = session['vendor_id']
 
     try:
@@ -224,21 +228,21 @@ def vendor_delete_item(item_id):
         db.rollback()
         flash(f"Error: {err}", 'danger')
 
-    return redirect(url_for('vendor_your_items'))
+    return redirect(url_for('vendor_items'))
+
 @app.route('/vendor/logout', methods=['POST'])
 def vendor_logout():
-    session.pop('vendor_id', None) 
+    session.pop('vendor_id', None)
     flash('Vendor logged out successfully', 'success')
     return redirect(url_for('vendor_login'))
-
 
 
 @app.route('/user/dashboard')
 def user_dashboard():
     user_name = session.get('user_name')
     selected_vendor_type = session.get('selected_vendor_type')
-
     return render_template('user/dashboard.html', user_name=user_name, selected_vendor_type=selected_vendor_type)
+
 
 
 @app.route('/user/vendors', methods=['GET'])
@@ -246,40 +250,64 @@ def display_vendor_categories():
     vendor_categories = ['Catering', 'Florist', 'Decoration', 'Lighting']
     return render_template('user/vendor_categories.html', vendor_categories=vendor_categories)
 
+
 def get_vendors_in_category(category):
     try:
-        cursor.execute("SELECT * FROM vendors WHERE category = %s", (category,))
+        cursor.execute("SELECT name, email FROM vendors WHERE category = %s", (category,))
         vendors = cursor.fetchall()
         return vendors
     except mysql.connector.Error as err:
         print(f"Error: {err}")
         return []
+
     
     
 @app.route('/user/vendors/<category>')
 def vendors_in_category(category):
     vendors = get_vendors_in_category(category)
-    return render_template('user/vendors_in_category.html', category=category, vendors=vendors)
-@app.route('/user/vendors/<category>', methods=['GET'])
-def display_vendors_in_category(category):
-    vendors = get_vendors_in_category(category) 
+    vendor_id = 4
+    return render_template('user/vendors_in_category.html', category=category, vendors=vendors, vendor_id=vendor_id)
 
-    return render_template('user/vendors_by_category.html', category=category, vendors=vendors)
 
 def get_vendor_items(vendor_id):
     try:
+        print("=========ven id",vendor_id)
         cursor.execute("SELECT * FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
         items = cursor.fetchall()
+        print("=========2222ven id",vendor_id)
+        for item in items:
+            {{ item }}
+            print("Item details:")
+            print(f"Column 1: {item[0]}") 
+            print(f"Column 2: {item[1]}") 
+          
+
         return items
     except mysql.connector.Error as err:
-        print(f"Error: {err}")
+        print(f"Error: ===================={err}")
         return []
 
-@app.route('/user/shop-items/<vendor_id>', methods=['GET'])
-def shop_items(vendor_id):
-    vendor_items = get_vendor_items(vendor_id)  
 
-    return render_template('user/shop_items.html', vendor_items=vendor_items)
+@app.route('/user/shop-items/<int:vendor_id>', methods=['GET'])
+def shop_items(vendor_id):
+    print("=======vendor id", vendor_id)
+    
+    cursor.execute("SELECT name, category FROM vendors WHERE id = %s", (vendor_id,))
+    vendor = cursor.fetchone()
+    print("=======vendor id", vendor_id)
+    if vendor:
+        vendor_name = vendor[0]
+        vendor_category = vendor[1]
+
+        cursor.execute("SELECT id, name, price FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
+        vendor_items = cursor.fetchall()
+
+        return render_template('user/shop_items.html', vendor_id=vendor_id, vendor_name=vendor_name, vendor_items=vendor_items)
+    else:
+        print("=========nooooo======")
+        flash('Vendor not found', 'danger')
+        return redirect(url_for('user_dashboard'))
+
 
 
 if __name__ == '__main__':
