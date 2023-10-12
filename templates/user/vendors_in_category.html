@@ -14,10 +14,11 @@
         <h1>Vendors in {{ category }}</h1>
         <ul>
             {% for vendor in vendors %}
+           
                 <li>
-                    <strong>Name - {{ vendor[0] }} </br> Contact: {{ vendor[1] }}</strong>
+                    <strong>Name - {{ vendor[1] }} </br> Contact: {{ vendor[2] }}</strong>
                     <br>
-                    <a href="/user/shop-items/{{ vendor.id }}" class="btn btn-primary">Shop Items</a>
+                    <a href="/user/shop-items/{{ vendor[0] }}" class="btn btn-primary">Shop Items</a>
                 </li>
             {% endfor %}
         </ul>

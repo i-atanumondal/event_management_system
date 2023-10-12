@@ -253,7 +253,7 @@ def display_vendor_categories():
 
 def get_vendors_in_category(category):
     try:
-        cursor.execute("SELECT name, email FROM vendors WHERE category = %s", (category,))
+        cursor.execute("SELECT id, name, email FROM vendors WHERE category = %s", (category,))
         vendors = cursor.fetchall()
         return vendors
     except mysql.connector.Error as err:
@@ -265,16 +265,16 @@ def get_vendors_in_category(category):
 @app.route('/user/vendors/<category>')
 def vendors_in_category(category):
     vendors = get_vendors_in_category(category)
-    vendor_id = 4
+    vendor_id = vendors[0]
     return render_template('user/vendors_in_category.html', category=category, vendors=vendors, vendor_id=vendor_id)
 
 
 def get_vendor_items(vendor_id):
     try:
-        print("=========ven id",vendor_id)
-        cursor.execute("SELECT * FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
+        print("=====cvxcv====ven id",vendor_id)
+        cursor.execute("SELECT * FROM products WHERE vendor_id = %s", (vendor_id,))
         items = cursor.fetchall()
-        print("=========2222ven id",vendor_id)
+        print("=========items id",items)
         for item in items:
             {{ item }}
             print("Item details:")
@@ -289,24 +289,122 @@ def get_vendor_items(vendor_id):
 
 
 @app.route('/user/shop-items/<int:vendor_id>', methods=['GET'])
-def shop_items(vendor_id):
-    print("=======vendor id", vendor_id)
-    
+def shop_items(vendor_id):    
     cursor.execute("SELECT name, category FROM vendors WHERE id = %s", (vendor_id,))
     vendor = cursor.fetchone()
-    print("=======vendor id", vendor_id)
     if vendor:
         vendor_name = vendor[0]
         vendor_category = vendor[1]
 
-        cursor.execute("SELECT id, name, price FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
+        cursor.execute("SELECT id, name, price FROM products WHERE vendor_id = %s", (vendor_id,))
         vendor_items = cursor.fetchall()
 
         return render_template('user/shop_items.html', vendor_id=vendor_id, vendor_name=vendor_name, vendor_items=vendor_items)
     else:
-        print("=========nooooo======")
         flash('Vendor not found', 'danger')
         return redirect(url_for('user_dashboard'))
+
+
+@app.route('/add-to-cart/<product_id>', methods=['POST', 'GET'])
+def add_to_cart(product_id):
+    print("========<int:product_id>=======")
+    
+    print("========<int:product_id>=======",product_id)
+    cursor.execute("SELECT name, price FROM products WHERE id = %s", (product_id,))
+    product = cursor.fetchone()
+
+    if product:
+        user_id = session.get('user_id')
+        if user_id:
+            cursor.execute(
+                "INSERT INTO user_cart (user_id, product_id, name, price, quantity) VALUES (%s, %s, %s, %s, 1)",
+                (user_id, product_id, product[0], product[1])
+            )
+            db.commit()
+
+            flash('Item added to cart successfully', 'success')
+        else:
+            flash('Please log in to add items to your cart', 'danger')
+    else:
+        flash('Invalid input data', 'danger')
+
+    return redirect(url_for('view_cart'))
+
+@app.route('/view-cart')
+def view_cart():
+
+    user_id = session.get('user_id')
+    if user_id:
+        cursor.execute("SELECT product_id, name, price, SUM(quantity), price * SUM(quantity) FROM user_cart WHERE user_id = %s GROUP BY product_id, name, price", (user_id,))
+        cart_items = cursor.fetchall()
+        total_price = sum(item[4] for item in cart_items)
+
+        return render_template('user/shopping_cart.html', cart_items=cart_items, total_price=total_price)
+    else:
+        flash('Please log in to view your cart', 'danger')
+        return redirect(url_for('user_login'))
+
+    
+    
+
+@app.route('/remove-from-cart/<int:product_id>', methods=['POST'])
+def remove_from_cart(product_id):
+    user_id = session.get('user_id')
+
+    if not user_id:
+        flash('Please log in to manage your shopping cart.', 'danger')
+        return redirect(url_for('user_login'))
+
+    cursor.execute("SELECT id FROM user_cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
+    item = cursor.fetchone()
+
+    if item:
+
+        cursor.execute("DELETE FROM user_cart WHERE id = %s", (item[0],))
+        db.commit()
+        flash('Item removed from the shopping cart.', 'success')
+    else:
+        flash('Item not found in your shopping cart.', 'danger')
+
+    return redirect(url_for('view_cart'))
+
+@app.route('/user/cart/checkout', methods=['GET', 'POST'])
+def checkout():
+
+    
+    if request.method == 'POST':
+        user_id = session.get('user_id')
+        if user_id:
+            cursor = db.cursor()
+            cursor.execute("SELECT price FROM user_cart WHERE user_id = %s", (user_id,))
+            cart_items = cursor.fetchall()
+            total_price = sum(item[0] for item in cart_items)
+            print("========total_price========",total_price)
+            name = request.form['name']
+            email = request.form['email']
+            address = request.form['address']
+            city = request.form['city']
+            phone_number = request.form.get('phone_number')
+
+            payment_method = request.form['payment_method']
+            state = request.form['state']
+            pin_code = request.form['pin_code']
+
+            cursor.execute(
+                "INSERT INTO orders (user_id, name, email, address, city, phone_number, payment_method, state, pin_code, total_price) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (user_id, name, email, address, city, phone_number, payment_method, state, pin_code, total_price)
+            )
+            db.commit()
+            cursor.execute("DELETE FROM user_cart WHERE user_id = %s", (user_id,))
+            db.commit()
+
+            return render_template('user/order_confirmation.html', total_price=total_price, name=name, email=email, address=address, city=city, phone_number=phone_number, payment_method=payment_method, state=state, pin_code=pin_code)
+
+        flash('Please log in to complete the order.', 'danger')
+        return redirect(url_for('user_login'))
+
+    return render_template('user/checkout.html')
 
 
 
