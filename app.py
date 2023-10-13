@@ -64,6 +64,7 @@ def admin_login():
 @app.route('/admin/dashboard')
 def admin_dashboard():
     return render_template('admin/dashboard.html')
+
 @app.route('/user/signup', methods=['GET', 'POST'])
 def user_signup():
     if request.method == 'POST':
@@ -176,6 +177,7 @@ def vendor_dashboard():
 
 @app.route('/vendor/items')
 def vendor_items():
+    print('================1==============')
     vendor_id = session.get('vendor_id')
     if vendor_id is None:
         return redirect(url_for('vendor_login'))
@@ -230,11 +232,11 @@ def vendor_delete_item(item_id):
 
     return redirect(url_for('vendor_items'))
 
-@app.route('/vendor/logout', methods=['POST'])
+@app.route('/vendor/logout', methods=['POST','GET'])
 def vendor_logout():
     session.pop('vendor_id', None)
     flash('Vendor logged out successfully', 'success')
-    return redirect(url_for('vendor_login'))
+    return redirect(url_for('landing_page'))
 
 
 @app.route('/user/dashboard')
@@ -265,16 +267,20 @@ def get_vendors_in_category(category):
 @app.route('/user/vendors/<category>')
 def vendors_in_category(category):
     vendors = get_vendors_in_category(category)
-    vendor_id = vendors[0]
+    if not vendors:
+        flash('No vendors found in this category', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    vendor_id = vendors[0]  
     return render_template('user/vendors_in_category.html', category=category, vendors=vendors, vendor_id=vendor_id)
+
 
 
 def get_vendor_items(vendor_id):
     try:
-        print("=====cvxcv====ven id",vendor_id)
         cursor.execute("SELECT * FROM products WHERE vendor_id = %s", (vendor_id,))
         items = cursor.fetchall()
-        print("=========items id",items)
+     
         for item in items:
             {{ item }}
             print("Item details:")
@@ -305,73 +311,45 @@ def shop_items(vendor_id):
         return redirect(url_for('user_dashboard'))
 
 
-@app.route('/add-to-cart/<product_id>', methods=['POST', 'GET'])
+@app.route('/add-to-cart/<int:product_id>', methods=['POST', 'GET'])
 def add_to_cart(product_id):
-    print("========<int:product_id>=======")
-    
-    print("========<int:product_id>=======",product_id)
-    cursor.execute("SELECT name, price FROM products WHERE id = %s", (product_id,))
+    cursor.execute("SELECT id, name, price FROM products WHERE id = %s", (product_id,))
     product = cursor.fetchone()
 
     if product:
+        product_price = product[2]
         user_id = session.get('user_id')
+
         if user_id:
             cursor.execute(
                 "INSERT INTO user_cart (user_id, product_id, name, price, quantity) VALUES (%s, %s, %s, %s, 1)",
-                (user_id, product_id, product[0], product[1])
+                (user_id, product_id, product[1], product_price)
             )
             db.commit()
 
-            flash('Item added to cart successfully', 'success')
-        else:
-            flash('Please log in to add items to your cart', 'danger')
+        return redirect(url_for('view_cart'))
     else:
-        flash('Invalid input data', 'danger')
+        flash('Product not found', 'error')
+        return redirect(url_for('view_cart'))
 
-    return redirect(url_for('view_cart'))
-
-@app.route('/view-cart')
+@app.route('/user/cart', methods=['GET'])
 def view_cart():
-
     user_id = session.get('user_id')
     if user_id:
         cursor.execute("SELECT product_id, name, price, SUM(quantity), price * SUM(quantity) FROM user_cart WHERE user_id = %s GROUP BY product_id, name, price", (user_id,))
         cart_items = cursor.fetchall()
         total_price = sum(item[4] for item in cart_items)
-
         return render_template('user/shopping_cart.html', cart_items=cart_items, total_price=total_price)
     else:
         flash('Please log in to view your cart', 'danger')
         return redirect(url_for('user_login'))
 
-    
-    
 
-@app.route('/remove-from-cart/<int:product_id>', methods=['POST'])
-def remove_from_cart(product_id):
-    user_id = session.get('user_id')
 
-    if not user_id:
-        flash('Please log in to manage your shopping cart.', 'danger')
-        return redirect(url_for('user_login'))
 
-    cursor.execute("SELECT id FROM user_cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
-    item = cursor.fetchone()
-
-    if item:
-
-        cursor.execute("DELETE FROM user_cart WHERE id = %s", (item[0],))
-        db.commit()
-        flash('Item removed from the shopping cart.', 'success')
-    else:
-        flash('Item not found in your shopping cart.', 'danger')
-
-    return redirect(url_for('view_cart'))
 
 @app.route('/user/cart/checkout', methods=['GET', 'POST'])
 def checkout():
-
-    
     if request.method == 'POST':
         user_id = session.get('user_id')
         if user_id:
@@ -379,13 +357,12 @@ def checkout():
             cursor.execute("SELECT price FROM user_cart WHERE user_id = %s", (user_id,))
             cart_items = cursor.fetchall()
             total_price = sum(item[0] for item in cart_items)
-            print("========total_price========",total_price)
+
             name = request.form['name']
             email = request.form['email']
             address = request.form['address']
             city = request.form['city']
             phone_number = request.form.get('phone_number')
-
             payment_method = request.form['payment_method']
             state = request.form['state']
             pin_code = request.form['pin_code']
@@ -406,6 +383,66 @@ def checkout():
 
     return render_template('user/checkout.html')
 
+
+@app.route('/remove-from-cart/<int:product_id>', methods=['POST','GET'])
+def remove_from_cart(product_id):
+    user_id = session.get('user_id')
+
+    if not user_id:
+        flash('Please log in to manage your shopping cart.', 'danger')
+        return redirect(url_for('user_login'))
+
+    cursor.execute("SELECT id FROM user_cart WHERE user_id = %s AND product_id = %s", (user_id, product_id))
+    item = cursor.fetchone()
+
+    if item:
+        cursor.execute("DELETE FROM user_cart WHERE id = %s", (item[0],))
+        db.commit()
+        flash('Item removed from the shopping cart.', 'success')
+    else:
+        flash('Item not found in your shopping cart.', 'danger')
+
+    return redirect(url_for('view_cart'))
+
+@app.route('/user/cart/delete-all', methods=['POST'])
+def delete_all_items():
+    user_id = session.get('user_id')
+
+    if not user_id:
+        flash('Please log in to manage your shopping cart.', 'danger')
+        return redirect(url_for('user_login'))
+
+    cursor.execute("DELETE FROM user_cart WHERE user_id = %s", (user_id,))
+    db.commit()
+    flash('All items removed from the shopping cart.', 'success')
+
+    return redirect(url_for('view_cart'))
+
+@app.route('/user/order-status', methods=['GET'])
+def order_status():
+    print("=============nnn")
+    if 'user_id' not in session:
+        flash('Please log in to view order status.', 'danger')
+        return redirect(url_for('user_login')) 
+    user_id = session['user_id']
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT name, email, address FROM orders WHERE user_id = %s", (user_id,))
+    order_info = cursor.fetchone()
+
+    if order_info:
+        order_info['status'] = 'Arriving'  
+        return render_template('user/order_status.html', order_info=order_info)
+    else:
+        flash('No order information found.', 'warning')
+        return render_template('user/order_status.html', order_info=None)
+
+
+
+@app.route('/user/logout', methods=['POST','GET'])
+def user_logout():
+    session.pop('user_id', None)
+    flash('User logged out successfully', 'success')
+    return redirect(url_for('landing_page'))
 
 
 if __name__ == '__main__':
