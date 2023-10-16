@@ -6,25 +6,60 @@
     <title>Vendor Categories</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <style>
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1 {
+            color: #007BFF;
+            font-size: 24px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 20px 0;
+        }
+        .btn-primary {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Choose a Vendor Category</h1>
         <ul>
-            
             {% for category in vendor_categories %}
             <li>
-                <a href="/user/vendors/{{ category }}" class="btn btn-primary" style="margin-bottom: 20px">{{ category }}</a>
+                <a href="/user/vendors/{{ category }}" class="btn btn-primary">{{ category }}</a>
             </li>
             {% endfor %}
-       
-       
-
         </ul>
-
-
-
     </div>
 </body>
 </html>

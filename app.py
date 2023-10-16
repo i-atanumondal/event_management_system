@@ -19,6 +19,18 @@ cursor = db.cursor()
 def landing_page():
     return render_template('landing.html')
 
+# ==============admin===============
+
+@app.route('/api/maintenance-menu', methods=['GET'])
+def maintenance_menu_api():
+    if 'admin_id' in session:
+        admin_id = session['admin_id']
+        
+        return jsonify({"message": "Admin access to maintenance menu granted."})
+    else:
+        return jsonify({"error": "Access denied. Please log in as an admin."}), 401
+    
+    
 @app.route('/admin/signup', methods=['GET', 'POST'])
 def admin_signup():
     if request.method == 'POST':
@@ -49,11 +61,13 @@ def admin_login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+
         cursor.execute("SELECT * FROM admins WHERE email = %s", (email,))
         admin = cursor.fetchone()
 
         if admin and bcrypt.checkpw(password.encode('utf-8'), admin[3].encode('utf-8')):
-            session['admin_id'] = admin[0]
+            # Successful login
+            session['admin_id'] = admin[0]  # Set the 'admin_id' session variable
             flash('Login successful', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
@@ -63,7 +77,234 @@ def admin_login():
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    return render_template('admin/dashboard.html')
+    if 'admin_id' in session:
+        # You can add any existing logic for the admin dashboard here
+        return render_template('admin/dashboard.html')
+    else:
+        flash('Access denied. Please log in as an admin.', 'danger')
+        return redirect(url_for('admin_login'))
+
+@app.route('/admin/maintenance-menu')
+def maintenance_menu():
+    if 'admin_id' in session:
+        # Add your maintenance-related functionality here
+        return render_template('admin/maintenance_menu.html')
+    else:
+        flash('Access denied. Please log in as an admin.', 'danger')
+        return redirect(url_for('admin_login'))
+
+# ========================
+def get_user_data(user_id):
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    return cursor.fetchone()
+
+def get_all_users():
+    cursor.execute("SELECT * FROM users")
+    return cursor.fetchall()
+
+def get_all_users():
+    cursor.execute("SELECT * FROM users")
+    return cursor.fetchall()
+
+@app.route('/admin/maintain-user')
+def maintain_user():
+    if 'admin_id' not in session:
+        flash('Please log in as an admin to access this page.', 'danger')
+        return redirect(url_for('admin_login'))
+
+    users = get_all_users()  # Use the modified function to retrieve all users.
+    print("========users",users)
+    return render_template('admin/maintain_user.html', users=users)
+
+
+
+    
+def insert_user(name, email, password):
+    try:
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+            (name, email, hashed_password)
+        )
+        db.commit()
+
+        return True  # Return True if the user is inserted successfully
+    except mysql.connector.Error as err:
+        db.rollback()
+        print(f"Error: {err}")
+        return False  # Return False if there's an error during insertion
+
+# --------------add user
+
+# Updated Logic for Adding a User (Flask Application)
+
+@app.route('/admin/add-user', methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+
+        # Hash the user's password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        try:
+            cursor.execute(
+                "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+                (name, email, hashed_password)
+            )
+            db.commit()
+
+            return redirect(url_for('maintain_user', success=True))  # Redirect with success=True
+
+        except mysql.connector.Error as err:
+            db.rollback()
+            flash(f"Error: {err}", 'danger')
+
+    return render_template('admin/add_user.html')
+
+# ============add vendor
+def get_all_vendors():
+    cursor.execute("SELECT * FROM vendors")
+    return cursor.fetchall()
+
+
+@app.route('/admin/maintain-vendor')
+def maintain_vendors():
+    if 'admin_id' not in session:
+        flash('Please log in as an admin to access this page.', 'danger')
+        return redirect(url_for('admin_login'))
+
+    # Retrieve a list of vendors from the database
+    vendors = get_all_vendors()  # Implement this function to retrieve all vendors
+
+    return render_template('admin/maintain_vendor.html', vendors=vendors)
+
+
+def insert_vendor(name, email, password, category):
+    try:
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO vendors (name, email, password, category) VALUES (%s, %s, %s, %s)",
+            (name, email, hashed_password, category)
+        )
+        db.commit()
+
+        return True  # Return True if the vendor is inserted successfully
+    except mysql.connector.Error as err:
+        db.rollback()
+        print(f"Error: {err}")
+        return False  # Return False if there's an error during insertion
+
+
+@app.route('/admin/add-vendor', methods=['GET', 'POST'])
+def add_vendor():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        category = request.form['category']
+
+        # Hash the password using bcrypt
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        try:
+            cursor.execute(
+                "INSERT INTO vendors (name, email, password, category) VALUES (%s, %s, %s, %s)",
+                (name, email, hashed_password, category)
+            )
+            db.commit()
+
+            flash('Vendor added successfully', 'success')  # Set success message
+            return redirect(url_for('maintain-vendor'))
+        except mysql.connector.Error as err:
+            db.rollback()
+            flash(f"Error: {err}", 'danger')
+
+    return render_template('admin/add_vendor.html')
+
+@app.route('/admin/update-vendor/<int:vendor_id>', methods=['GET', 'POST'])
+def update_vendor(vendor_id):
+    if 'admin_id' not in session:
+        flash('Please log in as an admin to access this page.', 'danger')
+        return redirect(url_for('admin_login'))
+
+    cursor.execute("SELECT * FROM vendors WHERE id = %s", (vendor_id,))
+    vendor = cursor.fetchone()
+
+    if request.method == 'POST':
+        updated_name = request.form['vendor_name']
+        updated_email = request.form['vendor_email']
+        updated_category = request.form['category']  # Change 'vendor_category' to 'category' here
+
+        try:
+            cursor.execute(
+                "UPDATE vendors SET name = %s, email = %s, category = %s WHERE id = %s",
+                (updated_name, updated_email, updated_category, vendor_id)
+            )
+            db.commit()
+
+            flash('Vendor updated successfully', 'success')
+            return redirect(url_for('maintain_vendors'))
+        except mysql.connector.Error as err:
+            db.rollback()
+            flash(f"Error: {err}", 'danger')
+
+    return render_template('admin/update_vendor.html', vendor=vendor, vendor_id=vendor_id)
+
+
+
+# ============update user
+@app.route('/admin/update-user/<int:user_id>', methods=['GET', 'POST'])
+def update_user(user_id):
+    if request.method == 'POST':
+        updated_name = request.form['updated_name']
+        updated_email = request.form['updated_email']
+
+        if update_user_details(user_id, updated_name, updated_email):
+            flash('User updated successfully', 'success')
+            return redirect(url_for('maintain_user'))
+
+        else:
+            flash('Failed to update user. Please try again.', 'danger')
+
+    user = get_user_data(user_id)
+    print("====user",user)
+    return render_template('admin/update_user.html', user=user)
+
+
+
+
+# ============update
+
+
+def update_user_details(user_id, name, email):
+    try:
+        cursor = db.cursor()
+        cursor.execute(
+            "UPDATE users SET name = %s, email = %s WHERE id = %s",
+            (name, email, user_id)
+        )
+        db.commit()
+        return True  # Return True if the user details are updated successfully
+    except mysql.connector.Error as err:
+        db.rollback()
+        print(f"Error: {err}")
+        return False  # Return False if there's an error during the update
+
+    
+
+@app.route('/admin/logout', methods=['GET'])
+def admin_logout():
+    session.pop('admin_id', None)  # Remove the admin's session data
+    flash('Admin logged out successfully', 'success')
+    return redirect(url_for('landing_page'))  # Redirect to the landing page or any other desired page
+
+# =======================
 
 @app.route('/user/signup', methods=['GET', 'POST'])
 def user_signup():
@@ -92,29 +333,12 @@ def user_signup():
 
     return render_template('user/signup.html')
 
-
-@app.route('/user/login', methods=['GET', 'POST'])
-def user_login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
-
-        if user and bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
-            session['user_id'] = user[0]
-            flash('Login successful', 'success')
-            return redirect(url_for('user_dashboard'))
-        else:
-            flash('Login failed. Please check your credentials.', 'danger')
-            cursor.execute("INSERT INTO canceled_logins (email) VALUES (%s)", (email,))
-            db.commit()
-
-    return render_template('user/login.html')
+# ==============admin===============
 
 
 
+
+# ==============VEndor===============
 
 @app.route('/vendor/signup', methods=['GET', 'POST'])
 def vendor_signup():
@@ -169,7 +393,7 @@ def vendor_dashboard():
     
     cursor.execute("SELECT name FROM vendors WHERE id = %s", (vendor_id,))
     vendor_name = cursor.fetchone()[0]
-
+    print("=======vendor_name,",vendor_name)
     cursor.execute("SELECT * FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
     items = cursor.fetchall()
 
@@ -177,7 +401,6 @@ def vendor_dashboard():
 
 @app.route('/vendor/items')
 def vendor_items():
-    print('================1==============')
     vendor_id = session.get('vendor_id')
     if vendor_id is None:
         return redirect(url_for('vendor_login'))
@@ -239,9 +462,32 @@ def vendor_logout():
     return redirect(url_for('landing_page'))
 
 
+# ==============User===============
+
+@app.route('/user/login', methods=['GET', 'POST'])
+def user_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        if user and bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+            session['user_id'] = user[0]
+            flash('Login successful', 'success')
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('Login failed. Please check your credentials.', 'danger')
+            cursor.execute("INSERT INTO canceled_logins (email) VALUES (%s)", (email,))
+            db.commit()
+
+    return render_template('user/login.html')
+
 @app.route('/user/dashboard')
 def user_dashboard():
     user_name = session.get('user_name')
+    print("========user_name",user_name)
     selected_vendor_type = session.get('selected_vendor_type')
     return render_template('user/dashboard.html', user_name=user_name, selected_vendor_type=selected_vendor_type)
 
@@ -278,7 +524,7 @@ def vendors_in_category(category):
 
 def get_vendor_items(vendor_id):
     try:
-        cursor.execute("SELECT * FROM products WHERE vendor_id = %s", (vendor_id,))
+        cursor.execute("SELECT * FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
         items = cursor.fetchall()
      
         for item in items:
@@ -302,9 +548,9 @@ def shop_items(vendor_id):
         vendor_name = vendor[0]
         vendor_category = vendor[1]
 
-        cursor.execute("SELECT id, name, price FROM products WHERE vendor_id = %s", (vendor_id,))
+        cursor.execute("SELECT id, name, price FROM vendor_items WHERE vendor_id = %s", (vendor_id,))
         vendor_items = cursor.fetchall()
-
+        print("===========vendor_items",vendor_items)
         return render_template('user/shop_items.html', vendor_id=vendor_id, vendor_name=vendor_name, vendor_items=vendor_items)
     else:
         flash('Vendor not found', 'danger')
@@ -313,7 +559,7 @@ def shop_items(vendor_id):
 
 @app.route('/add-to-cart/<int:product_id>', methods=['POST', 'GET'])
 def add_to_cart(product_id):
-    cursor.execute("SELECT id, name, price FROM products WHERE id = %s", (product_id,))
+    cursor.execute("SELECT id, name, price FROM vendor_items WHERE id = %s", (product_id,))
     product = cursor.fetchone()
 
     if product:
@@ -372,6 +618,7 @@ def checkout():
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (user_id, name, email, address, city, phone_number, payment_method, state, pin_code, total_price)
             )
+            
             db.commit()
             cursor.execute("DELETE FROM user_cart WHERE user_id = %s", (user_id,))
             db.commit()
@@ -444,6 +691,34 @@ def user_logout():
     flash('User logged out successfully', 'success')
     return redirect(url_for('landing_page'))
 
+@app.route('/vendor/transactions', methods=['GET'])
+def vendor_transactions():
+    vendor_id = session.get('vendor_id')
+    
+    if vendor_id is None:
+        flash('Please log in as a vendor to view transactions.', 'danger')
+        return redirect(url_for('vendor_login'))
+    cursor.execute("SELECT id, user_id, status FROM orders WHERE vendor_id = %s", (vendor_id,))
+    orders = cursor.fetchall()
+    
+    return render_template('vendor/transactions.html', orders=orders)
+
+
+@app.route('/vendor/update-status/<int:order_id>', methods=['POST'])
+def update_order_status(order_id):
+    vendor_id = session.get('vendor_id')
+    
+    if vendor_id is None:
+        flash('Please log in as a vendor to update order status.', 'danger')
+        return redirect(url_for('vendor_login'))
+    
+    new_status = request.form['status']
+
+    cursor.execute("UPDATE orders SET status = %s WHERE id = %s AND vendor_id = %s", (new_status, order_id, vendor_id))
+    db.commit()
+
+    flash('Order status updated successfully', 'success')
+    return redirect(url_for('vendor_transactions'))
 
 if __name__ == '__main__':
     app.run(port= 6060,debug=True)

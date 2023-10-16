@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard - Update User</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body>
+    <h1>Welcome, Admin</h1>
+    
+    <h2>Update User</h2>
+    
+    <form method="post">
+        <div class="form-group">
+            <label for="updated_name">Name:</label>
+            <input type="text" id="updated_name" name="updated_name" value="{{ user[1] }}" required>
+        </div>
+        <div class="form-group">
+            <label for="updated_email">Email:</label>
+            <input type="email" id="updated_email" name="updated_email" value="{{ user[2] }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update User</button>
+    </form>
+    
+    <a href="/admin/maintain-users" class="btn btn-secondary">Cancel</a>
+</body>
+</html>

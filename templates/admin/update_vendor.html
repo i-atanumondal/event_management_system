@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Update Vendor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Welcome, Admin</h1>
+        <h2 class="mt-4">Update Vendor</h2>
+        <form method="post" action="/admin/update-vendor/{{ vendor_id }}" class="mt-4">
+            <div class="form-group">
+                <label for="vendor_name">Vendor Name:</label>
+                <input type="text" class="form-control" id="vendor_name" name="vendor_name" value="{{ vendor[1] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="vendor_email">Vendor Email:</label>
+                <input type="email" class="form-control" id="vendor_email" name="vendor_email" value="{{ vendor[2] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="vendor_category">Category:</label>
+                <select name="category" id="category" value="{{ vendor[4] }}" required>
+
+                    <option value="catering">Catering</option>
+                    <option value="florist">Florist</option>
+                    <option value="decoration">Decoration</option>
+                    <option value="lighting">Lighting</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Vendor</button>
+        </form>
+        <a href="/admin/maintain-vendor" class="btn btn-secondary mt-3">Cancel</a>
+    </div>
+</body>
+</html>

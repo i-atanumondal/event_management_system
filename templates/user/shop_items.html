@@ -16,7 +16,8 @@
     
     <div class="container">
         <div class="row">
-            <form method="POST" action="/add-to-cart/{{ vendor_items[0][0] }}">
+            <form method="POST" action="{% if vendor_items %}/add-to-cart/{{ vendor_items[0][0] }}{% endif %}">
+
 
 
                 <input type="hidden" name="vendor_id" value="{{ vendor_id }}">
