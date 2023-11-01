@@ -667,22 +667,22 @@ def delete_all_items():
 
 @app.route('/user/order-status', methods=['GET'])
 def order_status():
-    print("=============nnn")
     if 'user_id' not in session:
         flash('Please log in to view order status.', 'danger')
         return redirect(url_for('user_login')) 
+
     user_id = session['user_id']
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT name, email, address FROM orders WHERE user_id = %s", (user_id,))
     order_info = cursor.fetchone()
 
     if order_info:
-        order_info['status'] = 'Arriving'  
-        return render_template('user/order_status.html', order_info=order_info)
+        cursor.execute("SELECT name as product_name, status as product_status FROM order_items WHERE order_id = %s", (order_info['id'],))
+        order_items = cursor.fetchall()
+        return render_template('user/order_status.html', order_info=order_info, order_items=order_items)
     else:
         flash('No order information found.', 'warning')
-        return render_template('user/order_status.html', order_info=None)
-
+        return render_template('user/order_status.html', order_info=None, order_items=None)
 
 
 @app.route('/user/logout', methods=['POST','GET'])

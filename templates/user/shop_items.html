@@ -13,19 +13,17 @@
     <a href="/user/logout" class="btn btn-danger" style="position: absolute; top: 10px; right: 10px;">Logout</a>
     <h3><p>Vendor Name: {{ vendor_name }}</h3>
     <h2>Products</h2>
-    
+ 
     <div class="container">
         <div class="row">
-            <form method="POST" action="{% if vendor_items %}/add-to-cart/{{ vendor_items[0][0] }}{% endif %}">
-
-
-
+            <form method="POST" action="{% if vendor_items %}/add-to-cart/{{ vendor_items }}{% endif %}">
                 <input type="hidden" name="vendor_id" value="{{ vendor_id }}">
                 {% if vendor_items %}
                 {% for product in vendor_items %}
+                
                 <div class="col-md-6">
                     <div class="product">
-                        <h3>{{ product[1] }}</h3>
+                        <h3>{{ product }}</h3>
                         <p>Price: ${{ product[2] }}</p>
                         <input type="hidden" name="product_id" value="{{ product[0] }}">
                         <input type="hidden" name="product_name" value="{{ product[1] }}">
